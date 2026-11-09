@@ -1,0 +1,30 @@
+services:
+  api:
+    image: ${GHCR_IMAGE:?Задайте GHCR_IMAGE}:${IMAGE_TAG:-latest}
+    pull_policy: always
+    environment:
+      BRIEF_API_KEY: ${BRIEF_API_KEY:?Задайте BRIEF_API_KEY}
+      PROXYAPI_API_KEY: ${PROXYAPI_API_KEY:?Задайте PROXYAPI_API_KEY}
+      PROXYAPI_BASE_URL: ${PROXYAPI_BASE_URL:-https://api.proxyapi.ru/v1}
+      PROXYAPI_MODEL: ${PROXYAPI_MODEL:-openai/gpt-6-luna}
+      PROXYAPI_TIMEOUT_SECONDS: ${PROXYAPI_TIMEOUT_SECONDS:-45}
+      PROXYAPI_MAX_COMPLETION_TOKENS: ${PROXYAPI_MAX_COMPLETION_TOKENS:-2000}
+      PROXYAPI_TEMPERATURE: ${PROXYAPI_TEMPERATURE:-0.2}
+      MAX_INPUT_CHARS: ${MAX_INPUT_CHARS:-10000}
+      DAILY_LLM_CALL_LIMIT: ${DAILY_LLM_CALL_LIMIT:-100}
+      DATABASE_PATH: /data/briefs.sqlite3
+      APP_ENVIRONMENT: production
+    expose:
+      - "8000"
+    volumes:
+      - brief-data:/data
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  brief-data:
