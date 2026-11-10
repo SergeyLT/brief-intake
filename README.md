@@ -1,5 +1,7 @@
 # Brief Intake
 
+[![CI/CD](https://github.com/SergeyLT/brief-intake/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SergeyLT/brief-intake/actions/workflows/ci.yml)
+
 Первичный разбор заявок на интеграции и автоматизацию для менеджера команды разработки.
 
 Сервис превращает свободный текст брифа в карточку для менеджера: извлекает задачу и системы, отмечает недостающие сведения, готовит вопросы и короткий черновик ответа. Карточка и исходник сохраняются в SQLite. Ответ заказчику проверяет и отправляет человек.
@@ -219,6 +221,30 @@ python -m brief_intake.backup /data/backups/before-update.sqlite3
 ## Независимая проверка запуска
 
 Для проверки воспроизводимости выполните инструкции Windows или Linux из свежего клона в отдельном каталоге; на сервере используйте отдельное имя Compose-проекта и свободный локальный порт. Проверьте сборку, обработку заявки, чтение и повтор, аудит и сохранность карточки после пересоздания контейнера без удаления тома. Рабочий экземпляр и его том должны оставаться независимыми от проверочного запуска.
+
+[scripts/verify_api.py](scripts/verify_api.py) автоматически проверяет доступ, отклонение невалидного ввода, два реальных разбора (полный и неполный бриф), GET, повтор и конфликт идентификатора. Первичный запуск расходует два вызова модели. Ключ читается из `BRIEF_API_KEY` в окружении либо локального `.env`, не выводится и не сохраняется в результатах.
+
+Для внешнего HTTPS API:
+
+```sh
+python scripts/verify_api.py --base-url https://your-domain.example --state output/api-verification.json
+```
+
+Замените адрес своим доменом. Повторная проверка сохранённых карточек после обновления не создаёт новых заявок:
+
+```sh
+python scripts/verify_api.py --base-url https://your-domain.example --state output/api-verification.json --check-existing --require-version-change --expected-version FULL_COMMIT_SHA
+```
+
+Укажите ожидаемый полный SHA вместо `FULL_COMMIT_SHA`. Для проверки после простого пересоздания той же версии опустите `--require-version-change` и `--expected-version`. Ошибка проверки даёт ненулевой код завершения; существующий файл результатов при первичном запуске не перезаписывается.
+
+Если на Linux-хосте нет Python 3.12, используйте интерпретатор контейнера. Из корня клона в Bash:
+
+```bash
+docker compose exec -T api python - --base-url http://127.0.0.1:8000 --state /data/output/api-verification.json < scripts/verify_api.py
+```
+
+Здесь ключ берётся из окружения контейнера, а файл результатов сохраняется на постоянном томе. После `docker compose down` и `docker compose up -d --wait` выполните ту же команду с дополнительным `--check-existing` перед перенаправлением `< scripts/verify_api.py`.
 
 ## Возможные улучшения
 
